@@ -25,7 +25,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        client.connect();
 
         const chefCollection = client.db('restaurent-food').collection('chef');
 
@@ -38,6 +38,29 @@ async function run() {
         const reviewCollection = client.db('restaurent-food').collection('review');
 
         const menuCollection = client.db('restaurent-food').collection('menu');
+
+
+        // const indexKeys = { category: 1, name: 1 };
+
+        // const indexOptions = { name: 'nameCategory' };
+
+        // const result = await menuCollection.createIndex(indexKeys, indexOptions);
+
+
+        // Search
+        app.get('/menuSearch/:text', async (req, res) => {
+            const searchText = req.params.text;
+            const result = await menuCollection
+                .find({
+                    $or: [
+                        { category: { $regex: searchText, $options: 'i' } },
+                        { name: { $regex: searchText, $options: 'i' } }
+                    ]
+                })
+                .toArray();
+            res.send(result);
+        });
+
 
 
         // get chef
@@ -96,14 +119,16 @@ async function run() {
         // post booking
         app.post('/booking', async (req, res) => {
             const newItem = req.body;
+            newItem.createdAt = new Date(); // Fix the typo (new(Data()) to new Date())
             const result = await bookingCollection.insertOne(newItem);
-            res.send(result);
-        })
+            res.send(result); // Send back the inserted document
+        });
+
 
 
         // get booking
         app.get('/bookingData', async (req, res) => {
-            const result = await bookingCollection.find().toArray();
+            const result = await bookingCollection.find().sort({ createdAt: -1 }).toArray();
             res.send(result);
         })
 
@@ -114,7 +139,7 @@ async function run() {
             if (req.query?.email) {
                 query = { email: req.query.email }
             }
-            const result = await bookingCollection.find(query).toArray();
+            const result = await bookingCollection.find(query).sort({ createdAt: -1 }).toArray();
             res.send(result);
         })
 
@@ -162,6 +187,7 @@ async function run() {
         // post shared receipe
         app.post('/sharedReceipe', async (req, res) => {
             const newItem = req.body;
+            newItem.createdAt = new Date();
             const result = await sharedReceipeCollection.insertOne(newItem);
             res.send(result);
         })
@@ -174,14 +200,14 @@ async function run() {
             if (req.query?.email) {
                 query = { email: req.query.email }
             }
-            const result = await sharedReceipeCollection.find(query).toArray();
+            const result = await sharedReceipeCollection.find(query).sort({ createdAt: -1 }).toArray();
             res.send(result);
         })
 
 
         // get shared receipe
         app.get('/sharedReceipeAll', async (req, res) => {
-            const result = await sharedReceipeCollection.find().toArray();
+            const result = await sharedReceipeCollection.find().sort({ createdAt: -1 }).toArray();
             res.send(result);
         })
 
